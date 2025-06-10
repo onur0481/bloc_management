@@ -23,18 +23,29 @@ Bu proje, Flutter uygulamalarında state management için BLoC (Business Logic C
 
 ```
 lib/
-├── bloc/
+├── core/
+│   ├── constants/
+│   ├── error/
+│   ├── network/
+│   └── utils/
+├── features/
 │   ├── cards/
-│   │   ├── cards_bloc.dart
-│   │   ├── cards_event.dart
-│   │   └── cards_state.dart
-│   └── ...
-├── models/
-│   └── card.dart
-├── repositories/
-│   └── card_repository.dart
-└── screens/
-    └── cards_screen.dart
+│   │   ├── data/
+│   │   │   ├── datasources/
+│   │   │   ├── models/
+│   │   │   └── repositories/
+│   │   ├── domain/
+│   │   │   ├── entities/
+│   │   │   ├── repositories/
+│   │   │   └── usecases/
+│   │   └── presentation/
+│   │       ├── bloc/
+│   │       ├── pages/
+│   │       └── widgets/
+│   ├── form_management/
+│   ├── home/
+│   └── transactions/
+└── main.dart
 ```
 
 ## 🔄 Olay Akışları
