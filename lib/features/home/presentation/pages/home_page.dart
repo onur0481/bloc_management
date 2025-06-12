@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:bloc_management/features/profile/domain/bloc/profile_bloc.dart';
 import 'package:bloc_management/features/transactions/presentation/pages/all_transactions_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +12,7 @@ import 'package:bloc_management/features/transactions/domain/bloc/transactions_e
 import 'package:bloc_management/features/form_management/presentation/bloc/form_bloc.dart';
 import 'package:bloc_management/features/form_management/presentation/pages/form_page.dart';
 import 'package:bloc_management/core/di/injection.dart';
+import 'package:bloc_management/features/profile/presentation/pages/profile_page.dart';
 
 @RoutePage()
 class HomePage extends StatelessWidget {
@@ -30,6 +32,11 @@ class HomePage extends StatelessWidget {
           create: (context) => getIt<FormBloc>(),
           child: const FormPage(),
         );
+      case 3:
+        return BlocProvider(
+          create: (context) => getIt<ProfileBloc>(),
+          child: const ProfilePage(),
+        );
       default:
         return Container();
     }
@@ -47,6 +54,7 @@ class HomePage extends StatelessWidget {
               _buildPage(0),
               _buildPage(1),
               _buildPage(2),
+              _buildPage(3),
             ],
           ),
           bottomNavigationBar: NavigationBar(
@@ -69,6 +77,11 @@ class HomePage extends StatelessWidget {
                 icon: Icon(Icons.edit_note_outlined),
                 selectedIcon: Icon(Icons.edit_note),
                 label: 'Form',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: 'Profil',
               ),
             ],
           ),
