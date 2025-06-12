@@ -22,7 +22,7 @@ class ProfileBloc extends BaseBloc<ProfileEvent, ProfileState> {
 
       final response = await _repository.getProfile();
 
-      if (response.isSuccess && response.data != null) {
+      if (response.data != null) {
         emit(ProfileLoaded(profile: response.data!));
       } else {
         emit(ProfileError(
@@ -44,7 +44,7 @@ class ProfileBloc extends BaseBloc<ProfileEvent, ProfileState> {
 
       final response = await _repository.getProfileWithError();
 
-      if (response.isSuccess && response.data != null) {
+      if (response.data != null) {
         emit(ProfileLoaded(profile: response.data!));
       } else {
         emit(ProfileError(
