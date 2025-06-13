@@ -24,6 +24,10 @@ class ProfileInfoError extends ProfileInfoState {
   const ProfileInfoError(this.message, {this.type = 'toast'});
 }
 
+class ProfileInfoNoContent extends ProfileInfoState {
+  const ProfileInfoNoContent();
+}
+
 sealed class ProfileDetailsState {
   const ProfileDetailsState();
 }
@@ -45,6 +49,10 @@ class ProfileDetailsError extends ProfileDetailsState {
   final String message;
   final String? type;
   const ProfileDetailsError(this.message, {this.type = 'toast'});
+}
+
+class ProfileDetailsNoContent extends ProfileDetailsState {
+  const ProfileDetailsNoContent();
 }
 
 class ProfileState {

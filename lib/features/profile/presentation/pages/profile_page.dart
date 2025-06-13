@@ -66,6 +66,7 @@ class ProfilePage extends StatelessWidget {
                     style: const TextStyle(color: Colors.red),
                   );
                 }
+                if (infoState is ProfileInfoNoContent) return const Center(child: Text('Profil bilgileri bulunamadı'));
                 return const SizedBox.shrink();
               },
             ),
@@ -125,6 +126,7 @@ class ProfilePage extends StatelessWidget {
                           return const SizedBox.shrink();
                         },
                       ),
+                    if (detailsState is ProfileDetailsNoContent) const Center(child: Text('Detay bilgileri bulunamadı')),
                   ],
                 );
               },

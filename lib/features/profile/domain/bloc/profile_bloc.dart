@@ -25,7 +25,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     response.when(
       success: (data) => emit(state.copyWith(infoState: ProfileInfoLoaded(data))),
       error: (message, type) => emit(state.copyWith(infoState: ProfileInfoError(message, type: type))),
-      noContent: () => emit(state.copyWith(infoState: const ProfileInfoError('Veri bulunamadı'))),
+      noContent: () => emit(state.copyWith(infoState: const ProfileInfoNoContent())),
     );
   }
 
@@ -39,7 +39,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     response.when(
       success: (data) => emit(state.copyWith(detailsState: ProfileDetailsLoaded(data))),
       error: (message, type) => emit(state.copyWith(detailsState: ProfileDetailsError(message, type: type))),
-      noContent: () => emit(state.copyWith(detailsState: const ProfileDetailsError('Veri bulunamadı'))),
+      noContent: () => emit(state.copyWith(detailsState: const ProfileDetailsNoContent())),
     );
   }
 }

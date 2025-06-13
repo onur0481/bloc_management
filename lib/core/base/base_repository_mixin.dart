@@ -17,7 +17,7 @@ mixin BaseRepositoryMixin {
   }) {
     try {
       final data = parseData();
-      if (data == null) {
+      if (data == null || data == {}) {
         return const ApiResponse.noContent();
       }
       return ApiResponse.success(data);
