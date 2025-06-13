@@ -1,24 +1,10 @@
-class ApiResponse<T> {
-  final T? data;
-  final String? message;
-  final String? type;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  ApiResponse({
-    this.data,
-    this.message,
-    this.type,
-  });
+part 'api_response.freezed.dart';
 
-  factory ApiResponse.success(T data) {
-    return ApiResponse(
-      data: data,
-    );
-  }
-
-  factory ApiResponse.error(String message, {String type = 'toast'}) {
-    return ApiResponse(
-      message: message,
-      type: type,
-    );
-  }
+@freezed
+class ApiResponse<T> with _$ApiResponse<T> {
+  const factory ApiResponse.success(T data) = ApiResponseSuccess<T>;
+  const factory ApiResponse.error(String message, {String? type}) = ApiResponseError<T>;
+  const factory ApiResponse.noContent() = ApiResponseNoContent<T>;
 }

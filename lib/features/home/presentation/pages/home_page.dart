@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:bloc_management/features/profile/domain/bloc/profile_bloc.dart';
+import 'package:bloc_management/features/profile/domain/bloc/profile_event.dart';
 import 'package:bloc_management/features/transactions/presentation/pages/all_transactions_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,7 +35,7 @@ class HomePage extends StatelessWidget {
         );
       case 3:
         return BlocProvider(
-          create: (context) => getIt<ProfileBloc>(),
+          create: (context) => getIt<ProfileBloc>()..add(const LoadProfileInfo()),
           child: const ProfilePage(),
         );
       default:

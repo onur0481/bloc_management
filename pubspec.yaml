@@ -40,6 +40,7 @@ dependencies:
   bloc_concurrency: ^0.2.4
   rxdart: ^0.27.7
   freezed_annotation: ^2.4.1
+  i_toast: ^0.0.5
   json_annotation: ^4.8.1
 
 dev_dependencies:

@@ -1,39 +1,44 @@
+import 'package:bloc_management/core/base/base_repository_mixin.dart';
 import 'package:bloc_management/core/models/api_response.dart';
 import 'package:bloc_management/features/profile/data/models/profile_model.dart';
+import 'package:bloc_management/features/profile/data/models/profile_details_model.dart';
 
-class ProfileRepository {
-  // Simüle edilmiş API çağrısı
+class ProfileRepository with BaseRepositoryMixin {
   Future<ApiResponse<ProfileModel>> getProfile() async {
-    try {
-      // API çağrısı simülasyonu
-      await Future.delayed(const Duration(seconds: 1));
+    // API çağrısı simülasyonu
+    await Future.delayed(const Duration(seconds: 1));
 
-      // Başarılı durum
-      return ApiResponse.success(
-        ProfileModel(
-          id: 1,
-          name: 'John Doe',
-          email: 'john@example.com',
-          phone: '+90 555 123 4567',
-          avatar: 'https://example.com/avatar.jpg',
-          isVerified: true,
-        ),
-      );
-    } catch (e) {
-      return ApiResponse.error('Profil bilgileri alınamadı');
-    }
+    // API yanıtını simüle ediyoruz
+    final response = {
+      'id': 1,
+      'name': 'John Doe',
+      'email': 'john@example.com',
+      'phone': '+90 555 123 4567',
+      'avatar': 'https://i.pravatar.cc/150?img=1',
+      'isVerified': true,
+    };
+
+    return handleResponse<ProfileModel>(
+      parseData: () => ProfileModel.fromJson(response),
+      errorMessage: 'Profil bilgileri alınamadı',
+    );
   }
 
-  // Simüle edilmiş hata durumu
-  Future<ApiResponse<ProfileModel>> getProfileWithError() async {
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-      throw Exception('Sunucu hatası');
-    } catch (e) {
-      return ApiResponse.error(
-        'Profil bilgileri alınamadı',
-        type: 'popup',
-      );
-    }
+  Future<ApiResponse<ProfileDetailsModel>> getProfileDetails() async {
+    // API çağrısı simülasyonu
+    await Future.delayed(const Duration(seconds: 1));
+
+    // API yanıtını simüle ediyoruz
+    final response = {
+      'address': 'Atatürk Cad. No:123',
+      'city': 'İstanbul',
+      'country': 'Türkiye',
+      'bio': 'Flutter Developer',
+    };
+
+    return handleResponse<ProfileDetailsModel>(
+      parseData: () => ProfileDetailsModel.fromJson(response),
+      errorMessage: 'Profil detayları alınamadı',
+    );
   }
 }

@@ -1,59 +1,45 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:bloc_management/core/base/base_bloc.dart';
-
-import 'package:bloc_management/features/profile/data/repositories/profile_repository.dart';
 import 'package:bloc_management/features/profile/domain/bloc/profile_event.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_management/features/profile/data/repositories/profile_repository.dart';
 import 'package:bloc_management/features/profile/domain/bloc/profile_state.dart';
 
-class ProfileBloc extends BaseBloc<ProfileEvent, ProfileState> {
+class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final ProfileRepository _repository;
 
-  ProfileBloc(this._repository) : super(ProfileInitial()) {
-    on<LoadProfile>(_onLoadProfile);
-    on<LoadProfileWithError>(_onLoadProfileWithError);
+  ProfileBloc(this._repository)
+      : super(const ProfileState(
+          infoState: ProfileInfoInitial(),
+          detailsState: ProfileDetailsInitial(),
+        )) {
+    on<LoadProfileInfo>(_onLoadProfileInfo);
+    on<LoadProfileDetails>(_onLoadProfileDetails);
   }
 
-  Future<void> _onLoadProfile(
-    LoadProfile event,
+  Future<void> _onLoadProfileInfo(
+    LoadProfileInfo event,
     Emitter<ProfileState> emit,
   ) async {
-    try {
-      await handleLoading(emit, (isLoading) => ProfileLoading());
+    emit(state.copyWith(infoState: const ProfileInfoLoading()));
 
-      final response = await _repository.getProfile();
-
-      if (response.data != null) {
-        emit(ProfileLoaded(profile: response.data!));
-      } else {
-        emit(ProfileError(
-          message: response.message ?? 'Bir hata oluştu',
-          type: response.type ?? 'toast',
-        ));
-      }
-    } catch (e) {
-      emit(ProfileError(message: e.toString()));
-    }
+    final response = await _repository.getProfile();
+    response.when(
+      success: (data) => emit(state.copyWith(infoState: ProfileInfoLoaded(data))),
+      error: (message, type) => emit(state.copyWith(infoState: ProfileInfoError(message, type: type))),
+      noContent: () => emit(state.copyWith(infoState: const ProfileInfoError('Veri bulunamadı'))),
+    );
   }
 
-  Future<void> _onLoadProfileWithError(
-    LoadProfileWithError event,
+  Future<void> _onLoadProfileDetails(
+    LoadProfileDetails event,
     Emitter<ProfileState> emit,
   ) async {
-    try {
-      await handleLoading(emit, (isLoading) => ProfileLoading());
+    emit(state.copyWith(detailsState: const ProfileDetailsLoading()));
 
-      final response = await _repository.getProfileWithError();
-
-      if (response.data != null) {
-        emit(ProfileLoaded(profile: response.data!));
-      } else {
-        emit(ProfileError(
-          message: response.message ?? 'Bir hata oluştu',
-          type: response.type ?? 'toast',
-        ));
-      }
-    } catch (e) {
-      emit(ProfileError(message: e.toString()));
-    }
+    final response = await _repository.getProfileDetails();
+    response.when(
+      success: (data) => emit(state.copyWith(detailsState: ProfileDetailsLoaded(data))),
+      error: (message, type) => emit(state.copyWith(detailsState: ProfileDetailsError(message, type: type))),
+      noContent: () => emit(state.copyWith(detailsState: const ProfileDetailsError('Veri bulunamadı'))),
+    );
   }
 }
