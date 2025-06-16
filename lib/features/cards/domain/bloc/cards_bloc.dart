@@ -92,6 +92,7 @@ class CardsBloc extends BaseBloc<CardsEvent, CardsState> {
     try {
       await _cardRepository.delete(event.cardId);
       _allCards.removeWhere((card) => card.id == event.cardId);
+      on<LoadCardBalance>(_onLoadCardBalance, transformer: sequential());
       emit(CardsState.loaded(
         cards: _allCards,
         totalBankBalance: state.totalBankBalance,

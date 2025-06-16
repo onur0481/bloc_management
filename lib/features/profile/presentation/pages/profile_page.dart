@@ -65,9 +65,22 @@ class ProfilePage extends StatelessWidget {
                   );
                 }
                 if (profileState is ErrorState) {
-                  return Text(
-                    profileState.message ?? '',
-                    style: const TextStyle(color: Colors.red),
+                  return Builder(
+                    builder: (context) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Hata'),
+                            content: Text(profileState.message ?? ''),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tamam')),
+                            ],
+                          ),
+                        );
+                      });
+                      return const SizedBox.shrink();
+                    },
                   );
                 }
                 if (profileState is NoContentState) return const Center(child: Text('Profil bilgileri bulunamadı'));
