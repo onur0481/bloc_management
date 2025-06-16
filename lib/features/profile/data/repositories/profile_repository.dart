@@ -4,9 +4,23 @@ import 'package:bloc_management/features/profile/data/models/profile_model.dart'
 import 'package:bloc_management/features/profile/data/models/profile_details_model.dart';
 
 class ProfileRepository with BaseRepositoryMixin {
+  // Test için response type parametresi
+  String? _responseType;
+
+  void setResponseType(String type) {
+    _responseType = type;
+  }
+
   Future<ApiResponse<ProfileModel>> getProfile() async {
     // API çağrısı simülasyonu
     await Future.delayed(const Duration(seconds: 1));
+
+    // Test durumuna göre farklı yanıtlar döndür
+    if (_responseType == 'error') {
+      return const ApiResponse.error('Test hata mesajı');
+    } else if (_responseType == 'noContent') {
+      return const ApiResponse.noContent();
+    }
 
     // API yanıtını simüle ediyoruz
     final response = {
@@ -28,12 +42,19 @@ class ProfileRepository with BaseRepositoryMixin {
     // API çağrısı simülasyonu
     await Future.delayed(const Duration(seconds: 1));
 
+    // Test durumuna göre farklı yanıtlar döndür
+    if (_responseType == 'error') {
+      return const ApiResponse.error('Test hata mesajı');
+    } else if (_responseType == 'noContent') {
+      return const ApiResponse.noContent();
+    }
+
     // API yanıtını simüle ediyoruz
     final response = {
       'address': 'Atatürk Cad. No:123',
       'city': 'İstanbul',
       'country': 'Türkiye',
-      'bio': 'Flutter Developer',
+      'bio': 'Flutter Developers',
     };
 
     return handleResponse<ProfileDetailsModel>(

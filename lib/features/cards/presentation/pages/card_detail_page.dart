@@ -21,8 +21,8 @@ class CardDetailPage extends StatelessWidget {
       value: context.read<CardsBloc>(),
       child: BlocBuilder<CardsBloc, CardsState>(
         builder: (context, state) {
-          if (state is CardsLoaded) {
-            final card = state.cards.firstWhere((c) => c.id == cardId);
+          if (state.data != null) {
+            final card = state.data!.firstWhere((c) => c.id == cardId);
             final balance = state.cardBalances[cardId];
 
             return Scaffold(

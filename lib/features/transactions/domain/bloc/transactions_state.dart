@@ -4,7 +4,7 @@ import 'package:bloc_management/features/transactions/data/models/transaction_mo
 abstract class TransactionsState extends BaseState<List<TransactionModel>> {
   const TransactionsState({
     super.data,
-    super.error,
+    super.message,
     super.isLoading = false,
   });
 }
@@ -31,7 +31,7 @@ class TransactionsLoaded extends TransactionsState {
 class TransactionsError extends TransactionsState {
   final String message;
 
-  const TransactionsError(this.message) : super(error: message);
+  const TransactionsError(this.message) : super(message: message);
 
   @override
   List<Object?> get props => [message];

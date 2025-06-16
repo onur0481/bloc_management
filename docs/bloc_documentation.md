@@ -359,4 +359,182 @@ on<ScrollEvent>(_onScroll, transformer: throttleTime(Duration(milliseconds: 300)
 - Alert mekanizması kurun
 - Log rotasyonu yapın
 - Log seviyelerini belirleyin
-- Monitoring dashboard'ları oluşturun 
+- Monitoring dashboard'ları oluşturun
+
+## 6. Profil Özelliği Geliştirmeleri
+
+### 6.1 API Response Yapısı
+```dart
+@freezed
+class ApiResponse<T> with _$ApiResponse<T> {
+  const factory ApiResponse.success(T data) = ApiResponseSuccess<T>;
+  const factory ApiResponse.error(String message, {String? type}) = ApiResponseError<T>;
+  const factory ApiResponse.noContent() = ApiResponseNoContent<T>;
+}
+```
+- Freezed kullanarak immutable API yanıt yapısı oluşturduk
+- Üç farklı durum tanımladık: success, error ve noContent
+- Generic yapı sayesinde farklı veri tipleriyle kullanılabilir
+- Pattern matching ile kolay kullanım sağlar
+- Type-safe yapı sayesinde hata riskini azaltır
+
+### 6.2 Base State Yapısı
+```dart
+abstract class BaseState<T> extends Equatable {
+  final T? _data;
+  final String? _message;
+  final bool _isLoading;
+
+  const BaseState({
+    T? data,
+    String? message,
+    bool isLoading = false,
+  });
+}
+```
+- Tüm state'ler için temel yapı sağlar
+- Equatable ile gereksiz build'leri önler
+- Generic yapı ile farklı veri tipleri destekler
+- Loading, error ve data durumlarını yönetir
+- Immutable yapı ile state değişikliklerini kontrol eder
+
+### 6.3 Repository Mixin
+```dart
+mixin BaseRepositoryMixin {
+  T? parseResponse<T>(ApiResponse<T> response) {
+    return response.maybeWhen(
+      success: (data) => data,
+      orElse: () => null,
+    );
+  }
+
+  ApiResponse<T> handleResponse<T>({
+    required T? Function() parseData,
+    String? errorMessage,
+    String? errorType,
+  }) {
+    try {
+      final data = parseData();
+      if (data == null || data == {}) {
+        return const ApiResponse.noContent();
+      }
+      return ApiResponse.success(data);
+    } catch (e) {
+      return ApiResponse.error(errorMessage ?? 'Bir hata oluştu', type: errorType);
+    }
+  }
+}
+```
+- Repository katmanı için ortak fonksiyonlar sağlar
+- API yanıtlarını güvenli şekilde parse eder
+- Hata yönetimini merkezi hale getirir
+- Kod tekrarını önler
+- Tutarlı hata mesajları sağlar
+
+### 6.4 API Call Mixin
+```dart
+mixin HandleApiCallMixin {
+  Future<void> handleApiCall<T>({
+    required Future<ApiResponse<T>> Function() apiCall,
+    required void Function(BaseState<T>) emitState,
+  }) async {
+    emitState(const LoadingState());
+    final response = await apiCall();
+    response.when(
+      success: (data) => emitState(LoadedState(data)),
+      error: (message, type) => emitState(ErrorState(message)),
+      noContent: () => emitState(const NoContentState()),
+    );
+  }
+}
+```
+- Bloc'larda API çağrılarını standartlaştırır
+- Loading, success, error ve noContent durumlarını yönetir
+- State güncellemelerini otomatikleştirir
+- Hata yönetimini merkezi hale getirir
+- Kod tekrarını önler
+- Bakımı kolaylaştırdık
+
+### 6.5 Profil Bloc Yapısı
+```dart
+class ProfileBloc extends Bloc<ProfileEvent, ProfileState> with HandleApiCallMixin {
+  final ProfileRepository _repository;
+
+  ProfileBloc(this._repository) : super(const ProfileState(
+    profileState: InitialState(),
+    detailsState: InitialState(),
+  )) {
+    on<LoadProfileInfo>(_onLoadProfileInfo);
+    on<LoadProfileDetails>(_onLoadProfileDetails);
+  }
+}
+```
+- Repository pattern ile veri erişimini soyutlar
+- HandleApiCallMixin ile API çağrılarını yönetir
+- Event'leri ayrı sınıflarda tanımlar
+- State'leri immutable yapıda tutar
+- Dependency injection ile test edilebilirliği artırır
+
+### 6.6 Profil Sayfası
+```dart
+class ProfilePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ProfileBloc, ProfileState>(
+      buildWhen: (previous, current) => previous.profileState != current.profileState,
+      builder: (context, state) {
+        // State'e göre UI güncelleme
+      },
+    );
+  }
+}
+```
+- BlocBuilder ile state değişikliklerini izler
+- buildWhen ile gereksiz build'leri önler
+- State'e göre farklı UI gösterimi sağlar
+- Loading, error ve success durumlarını yönetir
+- Kullanıcı deneyimini iyileştirir
+
+### 6.7 Neden Bu Yapıyı Kullandık?
+
+#### 6.7.1 API Response
+- Type-safe yapı ile hata riskini azalttık
+- Pattern matching ile kolay kullanım sağladık
+- Immutable yapı ile state değişikliklerini kontrol ettik
+- Generic yapı ile kod tekrarını önledik
+- Freezed ile boilerplate kodları azalttık
+
+#### 6.7.2 Base State
+- Tüm state'ler için ortak yapı sağladık
+- Equatable ile performansı artırdık
+- Immutable yapı ile state yönetimini kolaylaştırdık
+- Generic yapı ile esneklik sağladık
+- Kod tekrarını önledik
+
+#### 6.7.3 Repository Mixin
+- Merkezi hata yönetimi sağladık
+- Kod tekrarını önledik
+- Tutarlı API yanıtları sağladık
+- Test edilebilirliği artırdık
+- Bakımı kolaylaştırdık
+
+#### 6.7.4 API Call Mixin
+- Standart API çağrı yapısı oluşturduk
+- State yönetimini otomatikleştirdik
+- Hata yönetimini merkezi hale getirdik
+- Kod tekrarını önledik
+- Bakımı kolaylaştırdık
+
+#### 6.7.5 Bloc Yapısı
+- Clean Architecture prensiplerini uyguladık
+- Test edilebilirliği artırdık
+- Kod organizasyonunu iyileştirdik
+- State yönetimini kolaylaştırdık
+- Dependency injection ile esneklik sağladık
+
+#### 6.7.6 UI Yapısı
+- Reactive programlama yaklaşımı kullandık
+- Performansı optimize ettik
+- Kullanıcı deneyimini iyileştirdik
+- State yönetimini kolaylaştırdık
+- Kod organizasyonunu iyileştirdik 

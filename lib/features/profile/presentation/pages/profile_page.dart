@@ -1,9 +1,12 @@
+import 'package:auto_route/auto_route.dart';
+import 'package:bloc_management/core/base/base_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc_management/features/profile/domain/bloc/profile_bloc.dart';
 import 'package:bloc_management/features/profile/domain/bloc/profile_event.dart';
 import 'package:bloc_management/features/profile/domain/bloc/profile_state.dart';
 
+@RoutePage()
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -20,38 +23,39 @@ class ProfilePage extends StatelessWidget {
           children: [
             // Profil Bilgileri
             BlocBuilder<ProfileBloc, ProfileState>(
-              buildWhen: (previous, current) => previous.infoState != current.infoState,
+              buildWhen: (previous, current) => previous.profileState != current.profileState,
               builder: (context, state) {
-                final infoState = state.infoState;
-                if (infoState is ProfileInfoLoading) {
+                final profileState = state.profileState;
+                if (profileState is LoadingState) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (infoState is ProfileInfoLoaded) {
+                if (profileState is LoadedState) {
+                  final profile = profileState.data;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (infoState.profile.avatar != null)
+                      if (profile?.avatar != null)
                         CircleAvatar(
                           radius: 50,
-                          backgroundImage: NetworkImage(infoState.profile.avatar!),
+                          backgroundImage: NetworkImage(profile!.avatar!),
                         ),
                       const SizedBox(height: 16),
                       Text(
-                        infoState.profile.name,
+                        profile?.name ?? '',
                         style: Theme.of(context).textTheme.headlineMedium,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        infoState.profile.email,
+                        profile?.email ?? '',
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        infoState.profile.phone,
+                        profile?.phone ?? '',
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
                       const SizedBox(height: 8),
-                      if (infoState.profile.isVerified)
+                      if (profile?.isVerified ?? false)
                         const Chip(
                           label: Text('Doğrulanmış'),
                           backgroundColor: Colors.green,
@@ -60,15 +64,52 @@ class ProfilePage extends StatelessWidget {
                     ],
                   );
                 }
-                if (infoState is ProfileInfoError) {
+                if (profileState is ErrorState) {
                   return Text(
-                    infoState.message,
+                    profileState.message ?? '',
                     style: const TextStyle(color: Colors.red),
                   );
                 }
-                if (infoState is ProfileInfoNoContent) return const Center(child: Text('Profil bilgileri bulunamadı'));
+                if (profileState is NoContentState) return const Center(child: Text('Profil bilgileri bulunamadı'));
                 return const SizedBox.shrink();
               },
+            ),
+            const SizedBox(height: 24),
+            // Test Butonları
+            SizedBox(
+              height: 50,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.read<ProfileBloc>().add(const TestProfileError());
+                      },
+                      child: const Text('Error Test'),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.read<ProfileBloc>().add(const TestProfileNoContent());
+                      },
+                      child: const Text('No Content Test'),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.read<ProfileBloc>().add(const TestProfileSuccess());
+                      },
+                      child: const Text('Success Test'),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
             // Profil Detayları
@@ -80,12 +121,12 @@ class ProfilePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ElevatedButton(
-                      onPressed: detailsState is ProfileDetailsLoading
+                      onPressed: detailsState is LoadingState
                           ? null
                           : () {
                               context.read<ProfileBloc>().add(const LoadProfileDetails());
                             },
-                      child: detailsState is ProfileDetailsLoading
+                      child: detailsState is LoadingState
                           ? const SizedBox(
                               width: 20,
                               height: 20,
@@ -93,19 +134,19 @@ class ProfilePage extends StatelessWidget {
                             )
                           : const Text('Detayları Göster'),
                     ),
-                    if (detailsState is ProfileDetailsLoaded) ...[
+                    if (detailsState is LoadedState) ...[
                       const SizedBox(height: 16),
                       const Text(
                         'Detay Bilgileri',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      Text('Adres: ${detailsState.details.address}'),
-                      Text('Şehir: ${detailsState.details.city}'),
-                      Text('Ülke: ${detailsState.details.country}'),
-                      Text('Biyografi: ${detailsState.details.bio}'),
+                      Text('Adres: ${detailsState.data?.address}'),
+                      Text('Şehir: ${detailsState.data?.city}'),
+                      Text('Ülke: ${detailsState.data?.country}'),
+                      Text('Biyografi: ${detailsState.data?.bio}'),
                     ],
-                    if (detailsState is ProfileDetailsError)
+                    if (detailsState is ErrorState)
                       Builder(
                         builder: (context) {
                           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -113,7 +154,7 @@ class ProfilePage extends StatelessWidget {
                               context: context,
                               builder: (context) => AlertDialog(
                                 title: const Text('Hata'),
-                                content: Text(detailsState.message),
+                                content: Text(detailsState.message ?? ''),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
@@ -126,7 +167,7 @@ class ProfilePage extends StatelessWidget {
                           return const SizedBox.shrink();
                         },
                       ),
-                    if (detailsState is ProfileDetailsNoContent) const Center(child: Text('Detay bilgileri bulunamadı')),
+                    if (detailsState is NoContentState) const Center(child: Text('Detay bilgileri bulunamadı')),
                   ],
                 );
               },

@@ -20,7 +20,7 @@ class CardItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocSelector<CardsBloc, CardsState, num?>(
       selector: (state) {
-        if (state is CardsLoaded) {
+        if (state.data != null) {
           return state.cardBalances[card.id];
         }
         return null;
@@ -77,7 +77,7 @@ class CardItem extends StatelessWidget {
                       const SizedBox(height: 8),
                       BlocBuilder<CardsBloc, CardsState>(
                         builder: (context, state) {
-                          if (state is CardsLoaded) {
+                          if (state.data != null) {
                             final balance = state.cardBalances[card.id];
                             return Text(
                               'Bakiye: ${balance?.toString() ?? 'Yükleniyor...'} TL',

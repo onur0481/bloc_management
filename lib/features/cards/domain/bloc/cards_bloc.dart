@@ -1,7 +1,6 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc_management/core/base/base_bloc.dart';
-import 'package:bloc_management/core/error/app_error.dart';
 import 'package:bloc_management/features/cards/data/models/card_model.dart';
 import 'package:bloc_management/features/cards/data/repositories/card_repository.dart';
 import 'package:bloc_management/features/cards/domain/bloc/cards_event.dart';
@@ -11,7 +10,7 @@ class CardsBloc extends BaseBloc<CardsEvent, CardsState> {
   final CardRepository _cardRepository;
   List<CardModel> _allCards = [];
 
-  CardsBloc(this._cardRepository) : super(CardsInitial()) {
+  CardsBloc(this._cardRepository) : super(CardsState.initial()) {
     on<LoadCards>(_onLoadCards, transformer: concurrent());
     on<LoadCardBalance>(_onLoadCardBalance, transformer: sequential());
     on<FilterCards>(_onFilterCards, transformer: droppable());
@@ -23,49 +22,39 @@ class CardsBloc extends BaseBloc<CardsEvent, CardsState> {
 
   Future<void> _onLoadCards(LoadCards event, Emitter<CardsState> emit) async {
     try {
-      await handleLoading(emit, (isLoading) => CardsLoading());
+      emit(CardsState.loading());
       _allCards = await _cardRepository.getAll();
 
       final Map<int, num?> cardBalances = {};
       num totalBankBalance = 0;
       num totalBrandBalance = 0;
 
-      await handleSuccess(
-        _allCards,
-        emit,
-        (cards) => CardsLoaded(
-          cards: cards,
-          totalBankBalance: totalBankBalance,
-          totalBrandBalance: totalBrandBalance,
-          cardBalances: cardBalances,
-        ),
-      );
+      emit(CardsState.loaded(
+        cards: _allCards,
+        totalBankBalance: totalBankBalance,
+        totalBrandBalance: totalBrandBalance,
+        cardBalances: cardBalances,
+      ));
 
       for (final card in _allCards) {
         add(LoadCardBalance(card.id));
       }
     } catch (e) {
-      await handleError(
-        AppError(message: e.toString()),
-        emit,
-        (error) => CardsError(error),
-      );
+      emit(CardsState.error(e.toString()));
     }
   }
 
   Future<void> _onLoadCardBalance(LoadCardBalance event, Emitter<CardsState> emit) async {
-    if (state is CardsLoaded) {
-      final currentState = state as CardsLoaded;
+    if (state.data != null) {
       try {
         final balance = await _cardRepository.getCardBalance(event.cardId);
 
-        final updatedBalances = Map<int, num?>.from(currentState.cardBalances);
+        final updatedBalances = Map<int, num?>.from(state.cardBalances);
         updatedBalances[event.cardId] = balance;
 
         num totalBankBalance = 0;
         num totalBrandBalance = 0;
 
-        // Sadece ekranda görünen kartlar üzerinden toplamları hesapla
         for (final c in _allCards) {
           final b = updatedBalances[c.id];
           if (b != null) {
@@ -76,66 +65,52 @@ class CardsBloc extends BaseBloc<CardsEvent, CardsState> {
             }
           }
         }
-        print('Kart ID: ${event.cardId}, Bakiye: $balance');
 
-        emit(currentState.copyWith(
-          cards: List<CardModel>.from(currentState.cards),
+        emit(state.copyWith(
           cardBalances: updatedBalances,
           totalBankBalance: totalBankBalance,
           totalBrandBalance: totalBrandBalance,
         ));
       } catch (e) {
-        emit(CardsError(e.toString()));
+        emit(CardsState.error(e.toString()));
       }
     }
   }
 
   void _onFilterCards(FilterCards event, Emitter<CardsState> emit) {
-    if (state is CardsLoaded) {
-      final currentState = state as CardsLoaded;
+    if (state.data != null) {
       if (event.cardType == 'all') {
-        final filteredCards = _allCards;
-        emit(currentState.copyWith(cards: filteredCards));
+        emit(state.copyWith(data: _allCards));
       } else {
         final filteredCards = _allCards.where((card) => card.cardType == event.cardType).toList();
-        emit(currentState.copyWith(cards: filteredCards));
+        emit(state.copyWith(data: filteredCards));
       }
     }
   }
 
-  Future<void> _onDeleteCard(
-    DeleteCard event,
-    Emitter<CardsState> emit,
-  ) async {
+  Future<void> _onDeleteCard(DeleteCard event, Emitter<CardsState> emit) async {
     try {
       await _cardRepository.delete(event.cardId);
       _allCards.removeWhere((card) => card.id == event.cardId);
-      emit(CardsLoaded(
+      emit(CardsState.loaded(
         cards: _allCards,
-        totalBankBalance: state is CardsLoaded ? (state as CardsLoaded).totalBankBalance : 0,
-        totalBrandBalance: state is CardsLoaded ? (state as CardsLoaded).totalBrandBalance : 0,
-        cardBalances: state is CardsLoaded ? (state as CardsLoaded).cardBalances : {},
+        totalBankBalance: state.totalBankBalance,
+        totalBrandBalance: state.totalBrandBalance,
+        cardBalances: state.cardBalances,
       ));
     } catch (e) {
-      await handleError(
-        AppError(message: e.toString()),
-        emit,
-        (error) => CardsError(error),
-      );
+      emit(CardsState.error(e.toString()));
     }
   }
 
   Future<void> _onRefreshTransactions(RefreshTransactions event, Emitter<CardsState> emit) async {
-    if (state is CardsLoaded) {
+    if (state.data != null) {
       try {
-        // Kart bakiyesini yenile
         final balance = await _cardRepository.getCardBalance(event.cardId);
 
-        final currentState = state as CardsLoaded;
-        final updatedBalances = Map<int, num?>.from(currentState.cardBalances);
+        final updatedBalances = Map<int, num?>.from(state.cardBalances);
         updatedBalances[event.cardId] = balance;
 
-        // Toplam bakiyeleri güncelle
         num totalBankBalance = 0;
         num totalBrandBalance = 0;
 
@@ -150,49 +125,40 @@ class CardsBloc extends BaseBloc<CardsEvent, CardsState> {
           }
         }
 
-        emit(currentState.copyWith(
-          cards: List<CardModel>.from(currentState.cards),
+        emit(state.copyWith(
           cardBalances: updatedBalances,
           totalBankBalance: totalBankBalance,
           totalBrandBalance: totalBrandBalance,
         ));
       } catch (e) {
-        emit(CardsError(e.toString()));
+        emit(CardsState.error(e.toString()));
       }
     }
   }
 
-  void _onUpdateCardName(
-    UpdateCardName event,
-    Emitter<CardsState> emit,
-  ) {
-    if (state is CardsLoaded) {
-      final currentState = state as CardsLoaded;
-      final updatedCards = currentState.cards.map((card) {
+  void _onUpdateCardName(UpdateCardName event, Emitter<CardsState> emit) {
+    if (state.data != null) {
+      final updatedCards = state.data!.map((card) {
         if (card.id == event.cardId) {
           return card.copyWith(name: event.newName);
         }
         return card;
       }).toList();
 
-      emit(currentState.copyWith(cards: updatedCards));
+      emit(state.copyWith(data: updatedCards));
     }
   }
 
-  void _onUpdateCardType(
-    UpdateCardType event,
-    Emitter<CardsState> emit,
-  ) {
-    if (state is CardsLoaded) {
-      final currentState = state as CardsLoaded;
-      final updatedCards = currentState.cards.map((card) {
+  void _onUpdateCardType(UpdateCardType event, Emitter<CardsState> emit) {
+    if (state.data != null) {
+      final updatedCards = state.data!.map((card) {
         if (card.id == event.cardId) {
           return card.copyWith(cardType: event.newType);
         }
         return card;
       }).toList();
 
-      emit(currentState.copyWith(cards: updatedCards));
+      emit(state.copyWith(data: updatedCards));
     }
   }
 }

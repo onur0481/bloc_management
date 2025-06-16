@@ -7,6 +7,7 @@ import 'package:bloc_management/features/home/presentation/pages/home_page.dart'
 import 'package:bloc_management/features/transactions/presentation/pages/all_transactions_page.dart';
 import 'package:bloc_management/features/transactions/presentation/pages/transactions_page.dart';
 import 'package:bloc_management/features/form_management/presentation/pages/form_page.dart';
+import 'package:bloc_management/features/profile/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 
 part 'app_router.gr.dart';
@@ -31,6 +32,10 @@ class AppRouter extends _$AppRouter {
             AutoRoute(
               path: 'form',
               page: FormRoute.page,
+            ),
+            AutoRoute(
+              path: 'profile',
+              page: ProfileRoute.page,
             ),
           ],
         ),

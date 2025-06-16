@@ -14,19 +14,20 @@ class CardsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<CardsBloc, CardsState>(
       builder: (context, state) {
-        if (state is CardsInitial) {
+        if (state.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (state.data == null) {
           context.read<CardsBloc>().add(LoadCards());
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (state is CardsLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox.shrink();
         }
 
-        if (state is CardsError) {
-          return Center(child: Text(state.message));
+        if (state.message != null) {
+          return Center(child: Text(state.message!));
         }
 
-        if (state is CardsLoaded) {
+        if (state.data != null) {
           return Scaffold(
             appBar: AppBar(
               title: const Text('Kartlarım'),
@@ -47,9 +48,9 @@ class CardsPage extends StatelessWidget {
                 _buildBalanceSummary(state),
                 Expanded(
                   child: ListView.builder(
-                    itemCount: state.cards.length,
+                    itemCount: state.data!.length,
                     itemBuilder: (context, index) {
-                      final card = state.cards[index];
+                      final card = state.data![index];
 
                       return CardItem(
                         card: card,
@@ -68,7 +69,7 @@ class CardsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceSummary(CardsLoaded state) {
+  Widget _buildBalanceSummary(CardsState state) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Row(

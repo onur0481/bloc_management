@@ -8,6 +8,8 @@ class FormState extends BaseState<Map<String, dynamic>> {
   final PhoneInput phone;
   final FormStatus status;
   final bool isValid;
+  final Map<String, dynamic> _data;
+  final bool _isLoading;
 
   FormState({
     this.name = const NameInput.pure(),
@@ -15,14 +17,21 @@ class FormState extends BaseState<Map<String, dynamic>> {
     this.phone = const PhoneInput.pure(),
     this.status = FormStatus.pure,
     this.isValid = false,
-  }) : super(
-          data: {
-            'name': name.value,
-            'email': email.value,
-            'phone': phone.value,
-          },
-          isLoading: status == FormStatus.submissionInProgress,
-        );
+  })  : _data = {
+          'name': name.value,
+          'email': email.value,
+          'phone': phone.value,
+        },
+        _isLoading = status == FormStatus.submissionInProgress;
+
+  @override
+  Map<String, dynamic> get data => _data;
+
+  @override
+  bool get isLoading => _isLoading;
+
+  @override
+  String? get message => null;
 
   FormState copyWith({
     NameInput? name,

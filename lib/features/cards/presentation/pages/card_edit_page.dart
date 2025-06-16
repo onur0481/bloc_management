@@ -18,8 +18,8 @@ class CardEditPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<CardsBloc, CardsState>(
       builder: (context, state) {
-        if (state is CardsLoaded) {
-          final card = state.cards.firstWhere((c) => c.id == cardId);
+        if (state.data != null) {
+          final card = state.data!.firstWhere((c) => c.id == cardId);
           return Scaffold(
             appBar: AppBar(
               title: const Text('Kart Düzenle'),

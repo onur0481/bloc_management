@@ -1,64 +1,54 @@
 import 'package:bloc_management/core/base/base_state.dart';
 import 'package:bloc_management/features/cards/data/models/card_model.dart';
 
-abstract class CardsState extends BaseState<List<CardModel>> {
-  const CardsState({
-    super.data,
-    super.error,
-    super.isLoading = false,
-  });
-}
-
-class CardsInitial extends CardsState {
-  const CardsInitial() : super();
-}
-
-class CardsLoading extends CardsState {
-  const CardsLoading() : super(isLoading: true);
-}
-
-class CardsLoaded extends CardsState {
-  final List<CardModel> cards;
+class CardsState extends BaseState<List<CardModel>> {
   final num totalBankBalance;
   final num totalBrandBalance;
   final Map<int, num?> cardBalances;
 
-  const CardsLoaded({
-    required this.cards,
-    required this.totalBankBalance,
-    required this.totalBrandBalance,
-    required this.cardBalances,
-    bool isLoading = false,
-  }) : super(
-          data: cards,
-          isLoading: isLoading,
-        );
+  const CardsState({
+    super.data,
+    super.message,
+    super.isLoading = false,
+    this.totalBankBalance = 0,
+    this.totalBrandBalance = 0,
+    this.cardBalances = const {},
+  });
+
+  factory CardsState.initial() => const CardsState();
+  factory CardsState.loading() => const CardsState(isLoading: true);
+  factory CardsState.error(String message) => CardsState(message: message);
+  factory CardsState.loaded({
+    required List<CardModel> cards,
+    required num totalBankBalance,
+    required num totalBrandBalance,
+    required Map<int, num?> cardBalances,
+  }) =>
+      CardsState(
+        data: cards,
+        totalBankBalance: totalBankBalance,
+        totalBrandBalance: totalBrandBalance,
+        cardBalances: cardBalances,
+      );
 
   @override
-  List<Object?> get props => [cards, totalBankBalance, totalBrandBalance, cardBalances, isLoading];
+  List<Object?> get props => [data, message, isLoading, totalBankBalance, totalBrandBalance, cardBalances];
 
-  CardsLoaded copyWith({
-    List<CardModel>? cards,
+  CardsState copyWith({
+    List<CardModel>? data,
+    String? message,
+    bool? isLoading,
     num? totalBankBalance,
     num? totalBrandBalance,
     Map<int, num?>? cardBalances,
-    bool? isLoading,
   }) {
-    return CardsLoaded(
-      cards: cards ?? this.cards,
+    return CardsState(
+      data: data ?? this.data,
+      message: message ?? this.message,
+      isLoading: isLoading ?? this.isLoading,
       totalBankBalance: totalBankBalance ?? this.totalBankBalance,
       totalBrandBalance: totalBrandBalance ?? this.totalBrandBalance,
       cardBalances: cardBalances ?? this.cardBalances,
-      isLoading: isLoading ?? this.isLoading,
     );
   }
-}
-
-class CardsError extends CardsState {
-  final String message;
-
-  const CardsError(this.message) : super(error: message);
-
-  @override
-  List<Object?> get props => [message];
 }
