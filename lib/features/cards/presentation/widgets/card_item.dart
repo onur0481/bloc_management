@@ -20,10 +20,7 @@ class CardItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocSelector<CardsBloc, CardsState, num?>(
       selector: (state) {
-        if (state.data != null) {
-          return state.cardBalances[card.id];
-        }
-        return null;
+        return state.cardBalances[card.id];
       },
       builder: (context, balance) {
         return GestureDetector(
@@ -77,20 +74,10 @@ class CardItem extends StatelessWidget {
                       const SizedBox(height: 8),
                       BlocBuilder<CardsBloc, CardsState>(
                         builder: (context, state) {
-                          if (state.data != null) {
-                            final balance = state.cardBalances[card.id];
-                            return Text(
-                              'Bakiye: ${balance?.toString() ?? 'Yükleniyor...'} TL',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          }
-                          return const Text(
-                            'Bakiye: Yükleniyor...',
-                            style: TextStyle(
+                          final balance = state.cardBalances[card.id];
+                          return Text(
+                            'Bakiye: ${balance?.toString() ?? 'Yükleniyor...'} TL',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,

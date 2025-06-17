@@ -12,7 +12,7 @@ mixin HandleApiCallMixin {
     response.when(
       success: (data) => emitState(LoadedState(data)),
       error: (message, type) => emitState(ErrorState(message)),
-      noContent: () => emitState(const NoContentState()),
+      noContent: () => emitState(LoadedState(null as T)),
     );
   }
 }

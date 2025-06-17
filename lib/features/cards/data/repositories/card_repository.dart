@@ -1,9 +1,13 @@
-import 'package:bloc_management/core/base/base_repository.dart';
+import 'package:bloc_management/core/base/base_repository_mixin.dart';
+import 'package:bloc_management/core/models/api_response.dart';
 import 'package:bloc_management/features/cards/data/models/card_model.dart';
 
-class CardRepository implements BaseRepository<CardModel> {
-  // Dummy veri
-  final List<CardModel> _dummyCards = [
+class CardRepository with BaseRepositoryMixin {
+  // Test için response type parametresi
+  String? _responseType;
+
+  // Kartları tutacak private liste
+  final List<CardModel> _cards = [
     CardModel(
       id: 1,
       name: 'Ana Hesap',
@@ -42,48 +46,64 @@ class CardRepository implements BaseRepository<CardModel> {
     ),
   ];
 
-  @override
-  Future<List<CardModel>> getAll() async {
-    // Simüle edilmiş network gecikmesi
+  void setResponseType(String type) {
+    _responseType = type;
+  }
+
+  Future<ApiResponse<List<CardModel>>> getAllCards() async {
+    // API çağrısı simülasyonu
     await Future.delayed(const Duration(seconds: 1));
-    return _dummyCards;
-  }
 
-  @override
-  Future<CardModel?> getById(int id) async {
-    // Simüle edilmiş network gecikmesi
-    await Future.delayed(const Duration(milliseconds: 500));
-    return _dummyCards.firstWhere((card) => card.id == id);
-  }
-
-  @override
-  Future<void> create(CardModel item) async {
-    // Simüle edilmiş network gecikmesi
-    await Future.delayed(const Duration(milliseconds: 500));
-    _dummyCards.add(item);
-  }
-
-  @override
-  Future<void> update(CardModel item) async {
-    // Simüle edilmiş network gecikmesi
-    await Future.delayed(const Duration(milliseconds: 500));
-    final index = _dummyCards.indexWhere((card) => card.id == item.id);
-    if (index != -1) {
-      _dummyCards[index] = item;
+    // Test durumuna göre farklı yanıtlar döndür
+    if (_responseType == 'error') {
+      return const ApiResponse.error('Test hata mesajı');
+    } else if (_responseType == 'noContent') {
+      return const ApiResponse.noContent();
     }
+
+    return handleResponse<List<CardModel>>(
+      parseData: () => _cards,
+      errorMessage: 'Kartlar alınamadı',
+    );
   }
 
-  @override
-  Future<void> delete(int id) async {
-    // Simüle edilmiş network gecikmesi
+  Future<ApiResponse<num>> getCardBalance(int cardId) async {
+    // API çağrısı simülasyonu
     await Future.delayed(const Duration(milliseconds: 500));
-    _dummyCards.removeWhere((card) => card.id == id);
+
+    // Test durumuna göre farklı yanıtlar döndür
+    if (_responseType == 'error') {
+      return const ApiResponse.error('Test hata mesajı');
+    } else if (_responseType == 'noContent') {
+      return const ApiResponse.noContent();
+    }
+
+    // API yanıtını simüle ediyoruz
+    final response = (cardId * 1000).toDouble();
+
+    return handleResponse<num>(
+      parseData: () => response,
+      errorMessage: 'Kart bakiyesi alınamadı',
+    );
   }
 
-  Future<num> getCardBalance(int cardId) async {
-    // Simüle edilmiş network gecikmesi
+  Future<ApiResponse<void>> deleteCard(int cardId) async {
+    // API çağrısı simülasyonu
     await Future.delayed(const Duration(milliseconds: 500));
-    // Rastgele bakiye döndür
-    return (cardId * 1000).toDouble();
+
+    // Test durumuna göre farklı yanıtlar döndür
+    if (_responseType == 'error') {
+      return const ApiResponse.error('Test hata mesajı');
+    } else if (_responseType == 'noContent') {
+      return const ApiResponse.noContent();
+    }
+
+    // Kartı listeden sil
+    _cards.removeWhere((card) => card.id == cardId);
+
+    return handleResponse<void>(
+      parseData: () {},
+      errorMessage: 'Kart silinemedi',
+    );
   }
 }

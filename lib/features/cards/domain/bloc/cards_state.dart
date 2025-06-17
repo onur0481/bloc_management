@@ -1,54 +1,32 @@
 import 'package:bloc_management/core/base/base_state.dart';
 import 'package:bloc_management/features/cards/data/models/card_model.dart';
 
-class CardsState extends BaseState<List<CardModel>> {
+class CardsState {
+  final BaseState<List<CardModel>> cardsState;
+  final Map<int, num?> cardBalances;
   final num totalBankBalance;
   final num totalBrandBalance;
-  final Map<int, num?> cardBalances;
 
   const CardsState({
-    super.data,
-    super.message,
-    super.isLoading = false,
+    required this.cardsState,
+    this.cardBalances = const {},
     this.totalBankBalance = 0,
     this.totalBrandBalance = 0,
-    this.cardBalances = const {},
   });
 
-  factory CardsState.initial() => const CardsState();
-  factory CardsState.loading() => const CardsState(isLoading: true);
-  factory CardsState.error(String message) => CardsState(message: message);
-  factory CardsState.loaded({
-    required List<CardModel> cards,
-    required num totalBankBalance,
-    required num totalBrandBalance,
-    required Map<int, num?> cardBalances,
-  }) =>
-      CardsState(
-        data: cards,
-        totalBankBalance: totalBankBalance,
-        totalBrandBalance: totalBrandBalance,
-        cardBalances: cardBalances,
-      );
-
-  @override
-  List<Object?> get props => [data, message, isLoading, totalBankBalance, totalBrandBalance, cardBalances];
+  factory CardsState.initial() => const CardsState(cardsState: LoadingState());
 
   CardsState copyWith({
-    List<CardModel>? data,
-    String? message,
-    bool? isLoading,
+    BaseState<List<CardModel>>? cardsState,
+    Map<int, num?>? cardBalances,
     num? totalBankBalance,
     num? totalBrandBalance,
-    Map<int, num?>? cardBalances,
   }) {
     return CardsState(
-      data: data ?? this.data,
-      message: message ?? this.message,
-      isLoading: isLoading ?? this.isLoading,
+      cardsState: cardsState ?? this.cardsState,
+      cardBalances: cardBalances ?? this.cardBalances,
       totalBankBalance: totalBankBalance ?? this.totalBankBalance,
       totalBrandBalance: totalBrandBalance ?? this.totalBrandBalance,
-      cardBalances: cardBalances ?? this.cardBalances,
     );
   }
 }

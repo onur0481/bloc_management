@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:bloc_management/core/router/app_router.dart';
+import 'package:bloc_management/core/widgets/base_bloc_builder.dart';
 import 'package:bloc_management/features/cards/data/models/card_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,48 +18,44 @@ class CardDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: context.read<CardsBloc>(),
-      child: BlocBuilder<CardsBloc, CardsState>(
-        builder: (context, state) {
-          if (state.data != null) {
-            final card = state.data!.firstWhere((c) => c.id == cardId);
-            final balance = state.cardBalances[cardId];
+    return BaseBlocBuilder<CardsBloc, CardsState, List<CardModel>>(
+      bloc: context.read<CardsBloc>(),
+      stateSelector: (state) => state.cardsState,
+      onLoaded: (cards) {
+        final card = cards.firstWhere((c) => c.id == cardId);
+        final balance = context.read<CardsBloc>().state.cardBalances[cardId];
 
-            return Scaffold(
-              appBar: AppBar(
-                title: Text(card.name),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => context.router.push(
-                      CardEditRoute(cardId: cardId),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.settings),
-                    onPressed: () => context.router.push(
-                      CardSettingsRoute(cardId: cardId),
-                    ),
-                  ),
-                ],
-              ),
-              body: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    _buildCardHeader(card, balance),
-                    const SizedBox(height: 16),
-                    _buildActionButtons(context),
-                    const SizedBox(height: 16),
-                    _buildTransactionsList(context),
-                  ],
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(card.name),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => context.router.push(
+                  CardEditRoute(cardId: cardId),
                 ),
               ),
-            );
-          }
-          return const Center(child: CircularProgressIndicator());
-        },
-      ),
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () => context.router.push(
+                  CardSettingsRoute(cardId: cardId),
+                ),
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildCardHeader(card, balance),
+                const SizedBox(height: 16),
+                _buildActionButtons(context),
+                const SizedBox(height: 16),
+                _buildTransactionsList(context),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -100,11 +100,8 @@ mixin CardDetailsMixin {
                       _buildDetailItem('Kart Tipi', card.cardType == 'bank' ? 'Banka Kartı' : 'Marka Kartı'),
                       BlocBuilder<CardsBloc, CardsState>(
                         builder: (context, state) {
-                          if (state.data != null) {
-                            final balance = state.cardBalances[card.id];
-                            return _buildDetailItem('Bakiye', '${balance?.toString() ?? 'Yükleniyor...'} TL');
-                          }
-                          return _buildDetailItem('Bakiye', 'Yükleniyor...');
+                          final balance = state.cardBalances[card.id];
+                          return _buildDetailItem('Bakiye', '${balance?.toString() ?? 'Yükleniyor...'} TL');
                         },
                       ),
                     ],
