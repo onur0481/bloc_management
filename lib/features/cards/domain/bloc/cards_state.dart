@@ -29,4 +29,9 @@ class CardsState {
       totalBrandBalance: totalBrandBalance ?? this.totalBrandBalance,
     );
   }
+
+  @override
+  String toString() {
+    return 'CardsState(cardsState: $cardsState, cardBalances: $cardBalances, totalBankBalance: $totalBankBalance, totalBrandBalance: $totalBrandBalance)';
+  }
 }

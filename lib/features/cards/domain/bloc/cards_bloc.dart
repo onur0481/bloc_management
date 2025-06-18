@@ -22,9 +22,11 @@ class CardsBloc extends Bloc<CardsEvent, CardsState> with HandleApiCallMixin {
   }
 
   Future<void> _onLoadCards(LoadCards event, Emitter<CardsState> emit) async {
+    print('[CardsBloc] LoadCards event triggered');
     await handleApiCall<List<CardModel>>(
       apiCall: _cardRepository.getAllCards,
       emitState: (state) {
+        print('[CardsBloc] handleApiCall emitState: ' + state.toString());
         if (state is LoadedState<List<CardModel>>) {
           _allCards = state.data ?? [];
 
@@ -98,16 +100,18 @@ class CardsBloc extends Bloc<CardsEvent, CardsState> with HandleApiCallMixin {
   }
 
   Future<void> _onDeleteCard(DeleteCard event, Emitter<CardsState> emit) async {
-    await handleApiCall<void>(
+    await handleVoidApiCall(
       apiCall: () => _cardRepository.deleteCard(event.cardId),
       emitState: (state) {
-        if (state is LoadedState) {
-          add(LoadCards());
-        } else if (state is ErrorState) {
-          emit(this.state.copyWith(
-                cardsState: ErrorState<List<CardModel>>(state.message ?? 'Kart silinemedi'),
-              ));
-        }
+        emit(this.state.copyWith(cardsState: LoadingState<List<CardModel>>()));
+      },
+      onSuccess: () {
+        add(LoadCards());
+      },
+      onError: (msg) {
+        emit(state.copyWith(
+          cardsState: ErrorState<List<CardModel>>(msg ?? 'Kart silinemedi'),
+        ));
       },
     );
   }

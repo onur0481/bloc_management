@@ -1,5 +1,5 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:bloc_management/core/widgets/base_bloc_builder.dart';
+import 'package:bloc_management/core/base/base_state.dart';
 import 'package:bloc_management/features/cards/domain/bloc/cards_bloc.dart';
 import 'package:bloc_management/features/cards/domain/bloc/cards_event.dart';
 import 'package:bloc_management/features/cards/domain/bloc/cards_state.dart';
@@ -14,42 +14,54 @@ class CardsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BaseBlocBuilder<CardsBloc, CardsState, List<CardModel>>(
-      bloc: context.read<CardsBloc>(),
-      stateSelector: (state) => state.cardsState,
-      onLoaded: (cards) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Kartlarım'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  builder: (context) => CardFilterBottomSheet(),
-                );
-              },
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            _buildBalanceSummary(context),
-            Expanded(
-              child: ListView.builder(
-                itemCount: cards.length,
-                itemBuilder: (context, index) {
-                  final card = cards[index];
-                  return CardItem(
-                    card: card,
-                    cardsBloc: context.read<CardsBloc>(),
+    return BlocConsumer<CardsBloc, CardsState>(
+      listenWhen: (previous, current) {
+        final prevList = (previous.cardsState is LoadedState<List<CardModel>>) ? (previous.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
+        final currList = (current.cardsState is LoadedState<List<CardModel>>) ? (current.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
+        return prevList.length > currList.length;
+      },
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kart silindi!')),
+        );
+      },
+      builder: (context, state) {
+        print('[CardsPage] state: ' + state.toString());
+        final cards = (state.cardsState is LoadedState<List<CardModel>>) ? (state.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Kartlarım'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (context) => CardFilterBottomSheet(),
                   );
                 },
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+          body: Column(
+            children: [
+              _buildBalanceSummary(context),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: cards.length,
+                  itemBuilder: (context, index) {
+                    final card = cards[index];
+                    return CardItem(
+                      card: card,
+                      cardsBloc: context.read<CardsBloc>(),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
