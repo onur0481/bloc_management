@@ -1,5 +1,4 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:bloc_management/core/base/base_state.dart';
 import 'package:bloc_management/features/cards/domain/bloc/cards_bloc.dart';
 import 'package:bloc_management/features/cards/domain/bloc/cards_event.dart';
 import 'package:bloc_management/features/cards/domain/bloc/cards_state.dart';
@@ -7,6 +6,8 @@ import 'package:bloc_management/features/cards/data/models/card_model.dart';
 import 'package:bloc_management/features/cards/presentation/widgets/card_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_management/core/widgets/base_bloc_consumer.dart';
+import 'package:bloc_management/core/widgets/base_bloc_builder.dart';
 
 @RoutePage()
 class CardsPage extends StatelessWidget {
@@ -14,92 +15,106 @@ class CardsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<CardsBloc, CardsState>(listenWhen: (previous, current) {
-      final prevList = (previous.cardsState is LoadedState<List<CardModel>>) ? (previous.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
-      final currList = (current.cardsState is LoadedState<List<CardModel>>) ? (current.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
-      return prevList.length > currList.length;
-    }, listener: (context, state) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kart silindi!')),
-      );
-    }, builder: (context, state) {
-      // Loading durumunda loading animasyonu göster
-      if (state.cardsState is LoadingState<List<CardModel>>) {
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
-      }
-
-      // Hata durumunda hata mesajı göster
-      if (state.cardsState is ErrorState<List<CardModel>>) {
-        final errorMsg = (state.cardsState as ErrorState<List<CardModel>>).message ?? 'Bir hata oluştu';
-        return Scaffold(
-          body: Center(child: Text(errorMsg)),
-        );
-      }
-
-      // Yüklü kartlar varsa göster
-      final cards = (state.cardsState is LoadedState<List<CardModel>>) ? (state.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
-
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Kartlarım'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  builder: (context) => CardFilterBottomSheet(),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Kartlarım'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => const CardFilterBottomSheet(),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          BaseBlocBuilder<CardsBloc, CardsState, List<CardModel>>(
+            bloc: context.read<CardsBloc>(),
+            stateSelector: (state) => state.cardsState,
+            onLoaded: (_) => _buildBalanceSummary(
+              context.read<CardsBloc>().state.totalBankBalance,
+              context.read<CardsBloc>().state.totalBrandBalance,
+            ),
+            onLoading: _buildLoadingBalanceSummary(),
+            onNoContent: _buildBalanceSummary(0, 0),
+          ),
+          Expanded(
+            child: BaseBlocConsumer<CardsBloc, CardsState, List<CardModel>>(
+              bloc: context.read<CardsBloc>(),
+              stateSelector: (state) => state.cardsState,
+              onLoaded: (cards) {
+                if (cards.isEmpty) {
+                  return const Center(child: Text('Kart bulunamadı'));
+                }
+                return ListView.builder(
+                  itemCount: cards.length,
+                  itemBuilder: (context, index) {
+                    final card = cards[index];
+                    return CardItem(
+                      card: card,
+                      cardsBloc: context.read<CardsBloc>(),
+                    );
+                  },
                 );
               },
+              onNoContent: const Center(child: Text('Kart bulunamadı')),
+              onLoading: const Center(child: CircularProgressIndicator()),
+              onStateChange: (context, baseState) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Kart silindi!')),
+                );
+              },
+              listenWhen: (previous, current) => current is CardDeletedState,
             ),
-          ],
-        ),
-        body: Column(
-          children: [
-            _buildBalanceSummary(context),
-            Expanded(
-              child: ListView.builder(
-                itemCount: cards.length,
-                itemBuilder: (context, index) {
-                  final card = cards[index];
-                  return CardItem(
-                    card: card,
-                    cardsBloc: context.read<CardsBloc>(),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      );
-    });
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildBalanceSummary(BuildContext context) {
-    return BlocBuilder<CardsBloc, CardsState>(
-      buildWhen: (previous, current) => previous.totalBankBalance != current.totalBankBalance || previous.totalBrandBalance != current.totalBrandBalance,
-      builder: (context, state) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildBalanceCard(
-                'Banka Bakiyesi',
-                state.totalBankBalance.toString(),
-                Icons.account_balance,
-              ),
-              _buildBalanceCard(
-                'Marka Bakiyesi',
-                state.totalBrandBalance.toString(),
-                Icons.shopping_bag,
-              ),
-            ],
+  Widget _buildLoadingBalanceSummary() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildBalanceCard(
+            'Banka Bakiyesi',
+            'Yükleniyor...',
+            Icons.account_balance,
           ),
-        );
-      },
+          _buildBalanceCard(
+            'Marka Bakiyesi',
+            'Yükleniyor...',
+            Icons.shopping_bag,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceSummary(num totalBank, num totalBrand) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildBalanceCard(
+            'Banka Bakiyesi',
+            totalBank.toString(),
+            Icons.account_balance,
+          ),
+          _buildBalanceCard(
+            'Marka Bakiyesi',
+            totalBrand.toString(),
+            Icons.shopping_bag,
+          ),
+        ],
+      ),
     );
   }
 

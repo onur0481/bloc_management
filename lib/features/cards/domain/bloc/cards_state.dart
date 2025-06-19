@@ -35,3 +35,17 @@ class CardsState {
     return 'CardsState(cardsState: $cardsState, cardBalances: $cardBalances, totalBankBalance: $totalBankBalance, totalBrandBalance: $totalBrandBalance)';
   }
 }
+
+class CardDeletedState extends CardsState {
+  CardDeletedState({
+    required BaseState<List<CardModel>> cardsState,
+    required Map<int, num?> cardBalances,
+    required num totalBankBalance,
+    required num totalBrandBalance,
+  }) : super(
+          cardsState: cardsState,
+          cardBalances: cardBalances,
+          totalBankBalance: totalBankBalance,
+          totalBrandBalance: totalBrandBalance,
+        );
+}

@@ -98,21 +98,29 @@ class CardsBloc extends Bloc<CardsEvent, CardsState> with HandleApiCallMixin {
   }
 
   Future<void> _onDeleteCard(DeleteCard event, Emitter<CardsState> emit) async {
-    await handleVoidApiCall(
+    await handleApiCall<bool>(
       apiCall: () => _cardRepository.deleteCard(event.cardId),
-      onSuccess: () {
-        emit(const CardsState(
-          cardsState: LoadingState<List<CardModel>>(),
-          cardBalances: {},
-          totalBankBalance: 0,
-          totalBrandBalance: 0,
-        ));
-        add(LoadCards());
-      },
-      onError: (msg) {
-        emit(state.copyWith(
-          cardsState: ErrorState<List<CardModel>>(msg ?? 'Kart silinemedi'),
-        ));
+      emitState: (state) {
+        if (state is LoadingState<bool>) {
+          emit(const CardsState(
+            cardsState: LoadingState<List<CardModel>>(),
+            cardBalances: {},
+            totalBankBalance: 0,
+            totalBrandBalance: 0,
+          ));
+        } else if (state is LoadedState<bool> && state.data == true) {
+          emit(CardDeletedState(
+            cardsState: const LoadingState<List<CardModel>>(),
+            cardBalances: {},
+            totalBankBalance: 0,
+            totalBrandBalance: 0,
+          ));
+          add(LoadCards());
+        } else if (state is ErrorState<bool>) {
+          emit(this.state.copyWith(
+                cardsState: ErrorState<List<CardModel>>(state.message ?? 'Kart silinemedi'),
+              ));
+        }
       },
     );
   }
