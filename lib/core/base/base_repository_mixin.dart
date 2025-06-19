@@ -42,4 +42,22 @@ mixin BaseRepositoryMixin {
       return ApiResponse.error(errorMessage ?? 'Bir hata oluştu', type: errorType);
     }
   }
+
+  /// Bool döndüren işlemler için yardımcı fonksiyon
+  ApiResponse<bool> handleBoolResponse({
+    required bool Function() parseData,
+    String? errorMessage,
+    String? errorType,
+  }) {
+    try {
+      final result = parseData();
+      if (result == true) {
+        return const ApiResponse.success(true);
+      } else {
+        return ApiResponse.error(errorMessage ?? 'İşlem başarısız', type: errorType);
+      }
+    } catch (e) {
+      return ApiResponse.error(errorMessage ?? 'Bir hata oluştu', type: errorType);
+    }
+  }
 }

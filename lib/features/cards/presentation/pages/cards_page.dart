@@ -14,55 +14,67 @@ class CardsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<CardsBloc, CardsState>(
-      listenWhen: (previous, current) {
-        final prevList = (previous.cardsState is LoadedState<List<CardModel>>) ? (previous.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
-        final currList = (current.cardsState is LoadedState<List<CardModel>>) ? (current.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
-        return prevList.length > currList.length;
-      },
-      listener: (context, state) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Kart silindi!')),
+    return BlocConsumer<CardsBloc, CardsState>(listenWhen: (previous, current) {
+      final prevList = (previous.cardsState is LoadedState<List<CardModel>>) ? (previous.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
+      final currList = (current.cardsState is LoadedState<List<CardModel>>) ? (current.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
+      return prevList.length > currList.length;
+    }, listener: (context, state) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kart silindi!')),
+      );
+    }, builder: (context, state) {
+      // Loading durumunda loading animasyonu göster
+      if (state.cardsState is LoadingState<List<CardModel>>) {
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
         );
-      },
-      builder: (context, state) {
-        print('[CardsPage] state: ' + state.toString());
-        final cards = (state.cardsState is LoadedState<List<CardModel>>) ? (state.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
+      }
+
+      // Hata durumunda hata mesajı göster
+      if (state.cardsState is ErrorState<List<CardModel>>) {
+        final errorMsg = (state.cardsState as ErrorState<List<CardModel>>).message ?? 'Bir hata oluştu';
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Kartlarım'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (context) => CardFilterBottomSheet(),
+          body: Center(child: Text(errorMsg)),
+        );
+      }
+
+      // Yüklü kartlar varsa göster
+      final cards = (state.cardsState is LoadedState<List<CardModel>>) ? (state.cardsState as LoadedState<List<CardModel>>).data ?? [] : [];
+
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Kartlarım'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  builder: (context) => CardFilterBottomSheet(),
+                );
+              },
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            _buildBalanceSummary(context),
+            Expanded(
+              child: ListView.builder(
+                itemCount: cards.length,
+                itemBuilder: (context, index) {
+                  final card = cards[index];
+                  return CardItem(
+                    card: card,
+                    cardsBloc: context.read<CardsBloc>(),
                   );
                 },
               ),
-            ],
-          ),
-          body: Column(
-            children: [
-              _buildBalanceSummary(context),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: cards.length,
-                  itemBuilder: (context, index) {
-                    final card = cards[index];
-                    return CardItem(
-                      card: card,
-                      cardsBloc: context.read<CardsBloc>(),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildBalanceSummary(BuildContext context) {

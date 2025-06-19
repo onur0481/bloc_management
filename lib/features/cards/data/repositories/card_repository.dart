@@ -87,7 +87,7 @@ class CardRepository with BaseRepositoryMixin {
     );
   }
 
-  Future<ApiResponse<void>> deleteCard(int cardId) async {
+  Future<ApiResponse<bool>> deleteCard(int cardId) async {
     // API çağrısı simülasyonu
     await Future.delayed(const Duration(milliseconds: 500));
 
@@ -99,10 +99,13 @@ class CardRepository with BaseRepositoryMixin {
     }
 
     // Kartı listeden sil
+    final beforeCount = _cards.length;
     _cards.removeWhere((card) => card.id == cardId);
+    final afterCount = _cards.length;
+    final isDeleted = beforeCount > afterCount;
 
-    return handleResponse<void>(
-      parseData: () {},
+    return handleBoolResponse(
+      parseData: () => isDeleted,
       errorMessage: 'Kart silinemedi',
     );
   }
