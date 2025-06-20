@@ -13,7 +13,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsState> with HandleApiCallMixin {
 
   CardsBloc(this._cardRepository) : super(CardsState.initial()) {
     on<LoadCards>(_onLoadCards, transformer: concurrent());
-    on<LoadCardBalance>(_onLoadCardBalance, transformer: sequential());
+    on<LoadCardBalance>(_onLoadCardBalance, transformer: concurrent());
     on<FilterCards>(_onFilterCards, transformer: droppable());
     on<DeleteCard>(_onDeleteCard);
     on<RefreshTransactions>(_onRefreshTransactions, transformer: restartable());

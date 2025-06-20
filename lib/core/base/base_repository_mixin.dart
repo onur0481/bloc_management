@@ -20,6 +20,7 @@ mixin BaseRepositoryMixin {
       if (data == null) {
         return const ApiResponse.noContent();
       }
+
       return ApiResponse.success(data);
     } catch (e) {
       return ApiResponse.error(errorMessage ?? 'Bir hata oluştu', type: errorType);

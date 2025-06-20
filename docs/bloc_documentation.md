@@ -537,4 +537,353 @@ class ProfilePage extends StatelessWidget {
 - Performansı optimize ettik
 - Kullanıcı deneyimini iyileştirdik
 - State yönetimini kolaylaştırdık
-- Kod organizasyonunu iyileştirdik 
+- Kod organizasyonunu iyileştirdik
+
+## 7. Test Yapıları ve Stratejileri
+
+### 7.1 ProfileBloc Test Yapısı
+
+#### 7.1.1 Test Kurulumu
+```dart
+group('ProfileBloc Tests', () {
+  late ProfileBloc profileBloc;
+  late ProfileRepository mockRepository;
+
+  setUp(() {
+    mockRepository = ProfileRepository();
+    profileBloc = ProfileBloc(mockRepository);
+  });
+
+  tearDown(() {
+    profileBloc.close();
+  });
+});
+```
+- **Group**: Tüm ProfileBloc testlerini mantıksal olarak gruplar
+- **setUp**: Her test öncesi çalışır, temiz bir test ortamı oluşturur
+- **tearDown**: Her test sonrası çalışır, kaynakları temizler
+- **mockRepository**: Gerçek API çağrıları yerine test verileri döndürür
+
+#### 7.1.2 Initial State Testi
+```dart
+test('initial state should be ProfileState with InitialState', () {
+  expect(profileBloc.state.profileState, isA<InitialState<ProfileModel>>());
+  expect(profileBloc.state.detailsState, isA<InitialState<ProfileDetailsModel>>());
+});
+```
+- Bloc'un başlangıç durumunu kontrol eder
+- State'lerin doğru tipte olduğunu doğrular
+- Test coverage'ı artırır
+
+#### 7.1.3 Event Test Yapısı
+```dart
+blocTest<ProfileBloc, ProfileState>(
+  'emits [LoadingState, LoadedState] when LoadProfileInfo is added',
+  build: () => profileBloc,
+  act: (bloc) => bloc.add(const LoadProfileInfo()),
+  wait: const Duration(seconds: 2),
+  expect: () => [
+    // Önce LoadingState
+    isA<ProfileState>().having(
+      (state) => state.profileState,
+      'profileState',
+      isA<LoadingState<ProfileModel>>(),
+    ),
+    // Sonra LoadedState
+    isA<ProfileState>().having(
+      (state) => state.profileState,
+      'profileState',
+      isA<LoadedState<ProfileModel>>(),
+    ),
+  ],
+);
+```
+
+**Test Parametreleri:**
+- **build**: Test için Bloc oluşturur
+- **act**: Event'i gönderir
+- **wait**: Asenkron işlemlerin tamamlanmasını bekler
+- **expect**: Beklenen state dizisini tanımlar
+
+#### 7.1.4 State Kontrol Mekanizması
+```dart
+isA<ProfileState>().having(
+  (state) => state.profileState, // Hangi field kontrol edilecek
+  'profileState', // Hata mesajında görünecek isim
+  isA<LoadingState<ProfileModel>>(), // Beklenen state tipi
+),
+```
+- **isA**: State'in doğru tipte olduğunu kontrol eder
+- **having**: State'in belirli bir field'ının beklenen değerde olduğunu doğrular
+- **isA**: Field'ın beklenen state tipinde olduğunu kontrol eder
+
+### 7.2 HandleApiCallMixin Test Davranışı
+
+#### 7.2.1 State Emit Sırası
+```dart
+// HandleApiCallMixin içinde
+emitState(LoadingState<T>()); // 1. LoadingState emit eder
+
+final response = await apiCall(); // 2. API çağrısı yapar
+response.when(
+  success: (data) => emitState(LoadedState<T>(data)), // 3a. Başarılı ise LoadedState
+  error: (message, type) => emitState(ErrorState<T>(message)), // 3b. Hata ise ErrorState
+  noContent: () => emitState(NoContentState<T>()), // 3c. Boş ise NoContentState
+);
+```
+
+**State Emit Sırası:**
+1. **LoadingState**: API çağrısı başladığında
+2. **LoadedState/ErrorState/NoContentState**: API çağrısı tamamlandığında
+
+#### 7.2.2 Test Beklentileri
+```dart
+expect: () => [
+  // Her test için önce LoadingState beklenir
+  isA<ProfileState>().having(
+    (state) => state.profileState,
+    'profileState',
+    isA<LoadingState<ProfileModel>>(),
+  ),
+  // Sonra beklenen state (LoadedState, ErrorState, NoContentState)
+  isA<ProfileState>().having(
+    (state) => state.profileState,
+    'profileState',
+    isA<LoadedState<ProfileModel>>(), // veya ErrorState, NoContentState
+  ),
+],
+```
+
+### 7.3 Repository Test Yapısı
+
+#### 7.3.1 Mock Repository Davranışı
+```dart
+class ProfileRepository {
+  String? _responseType; // Test için response type
+
+  void setResponseType(String type) {
+    _responseType = type;
+  }
+
+  Future<ApiResponse<ProfileModel>> getProfile() async {
+    await Future.delayed(const Duration(seconds: 1)); // API simülasyonu
+
+    if (_responseType == 'error') {
+      return const ApiResponse.error('Test hata mesajı');
+    } else if (_responseType == 'noContent') {
+      return const ApiResponse.noContent();
+    }
+
+    return handleResponse<ProfileModel>(
+      parseData: () => _mockProfile,
+      errorMessage: 'Profil alınamadı',
+    );
+  }
+}
+```
+
+**Test Senaryoları:**
+- **Normal durum**: Başarılı API yanıtı
+- **Hata durumu**: `setResponseType('error')` ile hata simülasyonu
+- **Boş içerik**: `setResponseType('noContent')` ile boş içerik simülasyonu
+
+#### 7.3.2 Test Event'leri
+```dart
+// Test senaryoları için özel event'ler
+class TestProfileError extends ProfileEvent {
+  const TestProfileError();
+}
+
+class TestProfileNoContent extends ProfileEvent {
+  const TestProfileNoContent();
+}
+
+class TestProfileSuccess extends ProfileEvent {
+  const TestProfileSuccess();
+}
+```
+
+### 7.4 Wait Parametresinin Önemi
+
+#### 7.4.1 Asenkron İşlem Yönetimi
+```dart
+wait: const Duration(seconds: 2),
+```
+
+**Neden Gerekli:**
+- Repository'deki `Future.delayed` nedeniyle API çağrıları asenkron
+- Test, state'leri beklerken asenkron işlemler henüz tamamlanmamış olabilir
+- `wait` parametresi, tüm asenkron işlemlerin tamamlanmasını bekler
+
+#### 7.4.2 Wait Olmadan Test Sorunları
+```dart
+// Wait olmadan test başarısız olur
+Expected: [LoadingState, LoadedState]
+Actual: [LoadingState] // Sadece LoadingState emit edilir
+```
+
+### 7.5 Test Senaryoları
+
+#### 7.5.1 Başarılı Durum Testi
+```dart
+blocTest<ProfileBloc, ProfileState>(
+  'emits [LoadingState, LoadedState] when LoadProfileInfo is added',
+  build: () => profileBloc,
+  act: (bloc) => bloc.add(const LoadProfileInfo()),
+  wait: const Duration(seconds: 2),
+  expect: () => [
+    isA<ProfileState>().having(
+      (state) => state.profileState,
+      'profileState',
+      isA<LoadingState<ProfileModel>>(),
+    ),
+    isA<ProfileState>().having(
+      (state) => state.profileState,
+      'profileState',
+      isA<LoadedState<ProfileModel>>(),
+    ),
+  ],
+);
+```
+
+#### 7.5.2 Hata Durumu Testi
+```dart
+blocTest<ProfileBloc, ProfileState>(
+  'emits [LoadingState, ErrorState] when LoadProfileInfo fails',
+  build: () {
+    mockRepository.setResponseType('error');
+    return ProfileBloc(mockRepository);
+  },
+  act: (bloc) => bloc.add(const LoadProfileInfo()),
+  wait: const Duration(seconds: 2),
+  expect: () => [
+    isA<ProfileState>().having(
+      (state) => state.profileState,
+      'profileState',
+      isA<LoadingState<ProfileModel>>(),
+    ),
+    isA<ProfileState>().having(
+      (state) => state.profileState,
+      'profileState',
+      isA<ErrorState<ProfileModel>>(),
+    ),
+  ],
+);
+```
+
+#### 7.5.3 Boş İçerik Testi
+```dart
+blocTest<ProfileBloc, ProfileState>(
+  'emits [LoadingState, NoContentState] when LoadProfileInfo returns no content',
+  build: () {
+    mockRepository.setResponseType('noContent');
+    return ProfileBloc(mockRepository);
+  },
+  act: (bloc) => bloc.add(const LoadProfileInfo()),
+  wait: const Duration(seconds: 2),
+  expect: () => [
+    isA<ProfileState>().having(
+      (state) => state.profileState,
+      'profileState',
+      isA<LoadingState<ProfileModel>>(),
+    ),
+    isA<ProfileState>().having(
+      (state) => state.profileState,
+      'profileState',
+      isA<NoContentState<ProfileModel>>(),
+    ),
+  ],
+);
+```
+
+### 7.6 Test Best Practices
+
+#### 7.6.1 Test Organizasyonu
+- **Group**: İlgili testleri mantıksal olarak grupla
+- **setUp/tearDown**: Test ortamını temiz tut
+- **Mock kullanımı**: Gerçek API çağrılarından kaçın
+- **Test coverage**: Tüm senaryoları test et
+
+#### 7.6.2 Test İsimlendirme
+```dart
+// İyi örnek
+'emits [LoadingState, LoadedState] when LoadProfileInfo is added'
+
+// Kötü örnek
+'test1'
+```
+
+#### 7.6.3 State Kontrolü
+```dart
+// Spesifik state kontrolü
+isA<ProfileState>().having(
+  (state) => state.profileState,
+  'profileState',
+  isA<LoadedState<ProfileModel>>(),
+),
+
+// Genel state kontrolü (kaçınılmalı)
+isA<ProfileState>(),
+```
+
+#### 7.6.4 Asenkron Test Yönetimi
+```dart
+// Doğru kullanım
+wait: const Duration(seconds: 2),
+
+// Yanlış kullanım
+// wait parametresi olmadan
+```
+
+### 7.7 Test Çalıştırma
+
+#### 7.7.1 Tek Test Çalıştırma
+```bash
+flutter test test/unit/bloc/profile_bloc_test.dart
+```
+
+#### 7.7.2 Belirli Test Çalıştırma
+```bash
+flutter test test/unit/bloc/profile_bloc_test.dart --plain-name "ProfileBloc Tests"
+```
+
+#### 7.7.3 Test Coverage
+```bash
+flutter test --coverage
+```
+
+### 7.8 Test Debugging
+
+#### 7.8.1 Hata Analizi
+```dart
+Expected: [LoadingState, LoadedState]
+Actual: [LoadingState] // Sadece bir state emit edilmiş
+```
+
+**Olası Nedenler:**
+- `wait` parametresi eksik
+- Repository'de hata oluşmuş
+- Event handler'da sorun var
+
+#### 7.8.2 Debug Stratejileri
+- Test çıktılarını detaylı incele
+- Repository mock'unu kontrol et
+- State emit sırasını doğrula
+- Asenkron işlemleri kontrol et
+
+### 7.9 Test Geliştirme Süreci
+
+#### 7.9.1 Test Yazma Adımları
+1. **Test kurulumu**: setUp ve tearDown
+2. **Initial state testi**: Bloc'un başlangıç durumu
+3. **Event testleri**: Her event için ayrı test
+4. **State kontrolü**: Beklenen state'lerin doğrulanması
+5. **Hata senaryoları**: Error state'lerin test edilmesi
+
+#### 7.9.2 Test Refactoring
+- Ortak test kodlarını extract et
+- Test helper fonksiyonları oluştur
+- Mock factory'ler kullan
+- Test data builder'ları oluştur
+
+Bu test yapısı, ProfileBloc'un tüm olası durumlarını kapsar ve BLoC'un doğru şekilde çalıştığını garanti eder. Testler, kod kalitesini artırır ve refactoring süreçlerinde güvenlik sağlar. 
